@@ -1,4 +1,6 @@
-<?php namespace App\Controllers;
+<?php
+
+namespace App\Controllers;
 
 use App\Models\BarangModel;
 
@@ -16,7 +18,7 @@ class Admin extends BaseController
 			'title' => 'Dashboard'
 		];
 
-		return view('admin/index',$data);
+		return view('admin/index', $data);
 	}
 	public function view()
 	{
@@ -26,7 +28,7 @@ class Admin extends BaseController
 			'barang' => $this->barangModel->getBarang()
 		];
 
-		return view('admin/index',$data);
+		return view('admin/index', $data);
 	}
 
 	public function detail($slug)
@@ -38,15 +40,14 @@ class Admin extends BaseController
 
 		if (empty($data['barang'])) {
 			throw new \CodeIgniter\Exceptions\PageNotFoundException('Barang ' . $slug . 'tidak ditemukan');
-			
 		}
 
-		return view('admin/detail',$data);
+		return view('admin/detail', $data);
 	}
 
 	public function create()
 	{
-		$data =[
+		$data = [
 			'title' => 'Form penambahan data Barang.',
 			'validation' => \Config\Services::validation()
 		];
@@ -57,34 +58,35 @@ class Admin extends BaseController
 	public function save()
 	{
 		if (!$this->validate([
-			'nama' =>[
+			'nama' => [
 				'rules' => 'required|is_unique[barang.nama]',
 				'errors' => [
 					'is_unique' => '*{field} barang sudah ada sebelumnya, silahkan gunakan nama lain.',
 					'required' => '*{field} barang belum diisi, silahkan isi terlebih dahulu.'
 				]
-				],
-				'gambar' =>[
-					'rules' => 'max_size[gambar,1024|is_image[gambar]|mime_in[gambar,image/jpg,image/jpeg,image/png'],
-					'errors' => [
-						'max_size' => 'Ukurang gambar terlalu besar. Max 1 Mb',
-						'is_image' => 'Silahkan sisipkan gambar saja .jpg , .png',
-						'mime_in' => 'Silahkan sisipkan gambar saja .jpg , .png'
-					]
-					])) {
+			],
+			'gambar' => [
+				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpg,image/jpeg,image/png]',
+				'errors' => [
+					'max_size' => 'Ukurang gambar terlalu besar',
+					'is_image' => 'Silahkan sisipkan gambar saja',
+					'mime_in' => 'Silahkan sisipkan gambar saja'
+				]
+			]
+		])) {
 			return redirect()->to('/admin/create/')->withInput();
 		}
 
-		$fileGambar =$this->request->getFile('gambar');
-		
-		if ($fileGambar->getError()=== 4) {
-			$namaGambar ='default.jpg';
-		}else {
+		$fileGambar = $this->request->getFile('gambar');
+
+		if ($fileGambar->getError() === 4) {
+			$namaGambar = 'default.jpg';
+		} else {
 			$namaGambar = $fileGambar->getRandomName();
-			$fileGambar->move('asset/img',$namaGambar);
+			$fileGambar->move('asset/img', $namaGambar);
 		}
 
-		$slug =url_title($this->request->getVar('nama'), '-',true);
+		$slug = url_title($this->request->getVar('nama'), '-', true);
 
 		$this->barangModel->save([
 			'nama' => $this->request->getVar('nama'),
@@ -96,7 +98,6 @@ class Admin extends BaseController
 
 		session()->setFlashdata('pesan', 'Barang berhasil disimpan');
 		return redirect()->to('/admin');
-
 	}
 
 	public function delete($idBarang)
@@ -104,7 +105,7 @@ class Admin extends BaseController
 		$barang = $this->barangModel->find($idBarang);
 
 		if ($barang['gambar'] != 'default.jpg') {
-			unlink('asset/img/'.$barang['gambar']);
+			unlink('asset/img/' . $barang['gambar']);
 		}
 		$this->barangModel->delete($idBarang);
 
@@ -130,7 +131,7 @@ class Admin extends BaseController
 
 		if ($barangLama['nama'] == $this->request->getVar('nama')) {
 			$rule_nama = 'required';
-		}else {
+		} else {
 			$rule_nama = 'required|is_unique[barang.nama]';
 		}
 
@@ -142,15 +143,16 @@ class Admin extends BaseController
 					'required' => '*{field} barang kosong, silahkan isi terlebih dahulu.'
 				]
 			],
-			'gambar'=> [
-				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpg,image/jpeg,image/png'],
-				'errors' => [
-					'max_size' => 'Ukuran gambar terlalu besar',
-					'is_image' => 'File yang di upload hanya gambar .jpg, .png',
-					'mime_in' => 'File yang di upload hanya gambar .jpg, .png'
-				]
-			
-				])) {
+			'gambar' => [
+				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpg,image/jpeg,image/png'
+			],
+			'errors' => [
+				'max_size' => 'Ukuran gambar terlalu besar',
+				'is_image' => 'File yang di upload hanya gambar .jpg, .png',
+				'mime_in' => 'File yang di upload hanya gambar .jpg, .png'
+			]
+
+		])) {
 			return redirect()->to('/edit/' . $this->request->getVar('slug'))->withInput();
 		}
 
@@ -158,14 +160,14 @@ class Admin extends BaseController
 
 		if ($fileGambar->getError() == 4) {
 			$namaGambar = $this->request->getVar('gambarLama');
-		}else {
+		} else {
 			$namaGambar = $fileGambar->getRandomName();
 
 			$fileGambar->move('asset/img/', $namaGambar);
-			unlink('asset/img/' .$this->request->getVar('gambarLama'));
+			unlink('asset/img/' . $this->request->getVar('gambarLama'));
 		}
 
-		$slug = url_title($this->request->getVar('nama'), '-',true);
+		$slug = url_title($this->request->getVar('nama'), '-', true);
 
 		$this->barangModel->save([
 			'idBarang' => $idBarang,

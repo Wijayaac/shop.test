@@ -10,23 +10,23 @@
                 <?= csrf_field(); ?>
                 <div class="form-group">
                     <label for="nama">Nama Produk</label>
-                    <input type="text" class="form-control <?= ($validation->hasError('nama')) ? 'is-invalid' : ''; ?>" name="nama" value="<?= old('nama'); ?> " autofocus required>
+                    <input id="nama" type="text" class="form-control <?= ($validation->hasError('nama')) ? 'is-invalid' : ''; ?>" name="nama" value="<?= old('nama'); ?> " autofocus required>
                     <div class="invalid-feedback">
                         <?= $validation->getError('nama'); ?>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="deskripsi"> Deskripsi</label>
-                    <input type="text" class="form-control" name="bio" value="<?= old('deskripsi'); ?>" required>
+                    <input id="deskripsi" type="text" class="form-control" name="deskripsi" value="<?= old('deskripsi'); ?>" required>
                 </div>
                 <div class="form-group">
                     <label for="gambar">Gambar</label>
-                    <input type="file" class="form-control-file <?= ($validation->hasError('gambar')) ? 'is-invalid' : ''; ?>" name="gambar">
+                    <input id="gambar" type="file" class="form-control-file <?= ($validation->hasError('gambar')) ? 'is-invalid' : ''; ?>" name="gambar">
                     <div class="invalid-feedback">
                         <?= $validation->getError('gambar'); ?>
                     </div>
                 </div>
-                <a class="btn btn-success btn-sm " href="#" role="button" type="submit"> </a>
+                <button type="submit">Simpan Produk</button>
             </form>
         </div>
     </div>
