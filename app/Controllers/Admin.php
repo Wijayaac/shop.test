@@ -12,10 +12,17 @@ class Admin extends BaseController
 	}
 	public function index()
 	{
-		$admin = $this->barangModel->findAll();
-
 		$data = [
-			'title' => 'Dashboard',
+			'title' => 'Dashboard'
+		];
+
+		return view('admin/index',$data);
+	}
+	public function view()
+	{
+		$admin = $this->barangModel->findAll();
+		$data = [
+			'title' => 'View Barang',
 			'barang' => $this->barangModel->getBarang()
 		];
 
