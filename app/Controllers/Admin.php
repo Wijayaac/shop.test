@@ -6,12 +6,12 @@ use App\Models\BarangModel;
 
 class Admin extends BaseController
 {
-
 	protected $barangModel;
 	public function __construct()
 	{
 		$this->barangModel = new BarangModel();
 	}
+
 	public function index()
 	{
 		$data = [
@@ -20,26 +20,26 @@ class Admin extends BaseController
 
 		return view('admin/index', $data);
 	}
+
 	public function view()
 	{
-		$admin = $this->barangModel->findAll();
 		$data = [
-			'title' => 'View Barang',
+			'title' => 'List Produk',
 			'barang' => $this->barangModel->getBarang()
 		];
 
-		return view('admin/index', $data);
+		return view('admin/view', $data);
 	}
 
 	public function detail($slug)
 	{
 		$data = [
-			'title' => 'Detail Barang',
-			'barang' => $this->barangModel->getBarang()
+			'title' => 'Detail Produk',
+			'barang' => $this->barangModel->getBarang($slug)
 		];
 
 		if (empty($data['barang'])) {
-			throw new \CodeIgniter\Exceptions\PageNotFoundException('Barang ' . $slug . 'tidak ditemukan');
+			throw new \CodeIgniter\Exceptions\PageNotFoundException('Produk' . $slug . 'tidak ditemukan');
 		}
 
 		return view('admin/detail', $data);
@@ -48,7 +48,7 @@ class Admin extends BaseController
 	public function create()
 	{
 		$data = [
-			'title' => 'Form penambahan data Barang.',
+			'title' => 'Tambah Produk',
 			'validation' => \Config\Services::validation()
 		];
 
@@ -57,132 +57,151 @@ class Admin extends BaseController
 
 	public function save()
 	{
+		// validasi input yang dilakukan
 		if (!$this->validate([
 			'nama' => [
 				'rules' => 'required|is_unique[barang.nama]',
 				'errors' => [
-					'is_unique' => '*{field} barang sudah ada sebelumnya, silahkan gunakan nama lain.',
-					'required' => '*{field} barang belum diisi, silahkan isi terlebih dahulu.'
+					'required' => '*{field} produk harus diisi',
+					'is_unique' => '*{field} produk sudah ada sebelumnya'
 				]
 			],
 			'gambar' => [
-				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpg,image/jpeg,image/png]',
+				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpeg,image/jpg,image/png]',
 				'errors' => [
-					'max_size' => 'Ukurang gambar terlalu besar',
-					'is_image' => 'Silahkan sisipkan gambar saja',
-					'mime_in' => 'Silahkan sisipkan gambar saja'
+					'max_size' => '*ukuran gambar terlalu besar',
+					'is_image' => '*file yang diupload hanya gambar',
+					'mime_in' => '*file yang diupload hanya gambar'
+
 				]
 			]
 		])) {
-			return redirect()->to('/admin/create/')->withInput();
+			return redirect()->to('create')->withInput();
 		}
 
-		$fileGambar = $this->request->getFile('gambar');
+		// input gambar
 
-		if ($fileGambar->getError() === 4) {
-			$namaGambar = 'default.jpg';
+		$fileGambar = $this->request->getFile('gambar');
+		// cek gambar jika tidak ada maka pakai default
+		if ($fileGambar->getError() == 4) {
+			$namaGambar = 'default.png';
 		} else {
+			// generate nama file random dan pindahkan ke folder img
 			$namaGambar = $fileGambar->getRandomName();
 			$fileGambar->move('asset/img', $namaGambar);
 		}
 
+		// buat slug
 		$slug = url_title($this->request->getVar('nama'), '-', true);
 
-		$this->barangModel->save([
-			'nama' => $this->request->getVar('nama'),
-			'slug' => $slug,
-			'deskripsi' => $this->request->getVar('deskripsi'),
-			'gambar' => $namaGambar
+		$this->barangModel->save(
+			[
+				'nama' => $this->request->getVar('nama'),
+				'slug' => $slug,
+				'deskripsi' => $this->request->getVar('deskripsi'),
+				'gambar' => $namaGambar
+			]
+		);
 
-		]);
+		session()->setFlashdata('pesan', 'Produk berhasil tersimpan');
 
-		session()->setFlashdata('pesan', 'Barang berhasil disimpan');
-		return redirect()->to('/admin');
+		return redirect()->to('view');
 	}
 
 	public function delete($idBarang)
 	{
+		// mencari gambar berdasarkan id dan jangan hapus gambar jika default
 		$barang = $this->barangModel->find($idBarang);
 
-		if ($barang['gambar'] != 'default.jpg') {
-			unlink('asset/img/' . $barang['gambar']);
+		if ($barang['gambar'] != 'default.png') {
+			unlink('asset/img' . $barang['gambar']);
 		}
+
 		$this->barangModel->delete($idBarang);
 
-		session()->setFlashdata('pesan', 'Barang berhasil terhapus.');
+		session()->setFlashdata('pesan', 'Produk berhasil dihapus');
 
-		return redirect()->to('/admin');
+		return redirect()->to('/admin/view/');
 	}
 
 	public function edit($slug)
 	{
 		$data = [
-			'title' => 'Form edit data Barang.',
+			'title' => 'Edit Produk',
 			'validation' => \Config\Services::validation(),
 			'barang' => $this->barangModel->getBarang($slug)
 		];
 
-		return view('admin/edit', $data);
+		return view('/admin/edit', $data);
 	}
 
 	public function update($idBarang)
 	{
 		$barangLama = $this->barangModel->getBarang($this->request->getVar('slug'));
 
+		// cek judul agar ga sama dengan lainnya saat diupdate
+
 		if ($barangLama['nama'] == $this->request->getVar('nama')) {
-			$rule_nama = 'required';
+			$ruleNama = 'required';
 		} else {
-			$rule_nama = 'required|is_unique[barang.nama]';
+			$ruleNama = 'required|is_unique[barang.nama]';
 		}
+
+		// validasi update
 
 		if (!$this->validate([
 			'nama' => [
-				'rules' => $rule_nama,
+				'rules' => $ruleNama,
 				'errors' => [
-					'is_unique' => '*{field} barang sudah ada, sialhkan gunakan nama lain.',
-					'required' => '*{field} barang kosong, silahkan isi terlebih dahulu.'
+					'is_unique' => '*{field} produk sudah ada sebelumnya',
+					'required' => '*{field} produk harus diisi'
 				]
 			],
 			'gambar' => [
-				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpg,image/jpeg,image/png'
-			],
-			'errors' => [
-				'max_size' => 'Ukuran gambar terlalu besar',
-				'is_image' => 'File yang di upload hanya gambar .jpg, .png',
-				'mime_in' => 'File yang di upload hanya gambar .jpg, .png'
-			]
+				'rules' => 'max_size[gambar,1024]|is_image[gambar]|mime_in[gambar,image/jpeg,image/jpg,image/png]',
+				'errors' => [
+					'max_size' => '*ukuran gambar terlalu besar',
+					'is_image' => '*file yang diupload hanya gambar',
+					'mime_in' => '*file yang diupload hanya gambar'
 
+				]
+			]
 		])) {
-			return redirect()->to('/edit/' . $this->request->getVar('slug'))->withInput();
+			return redirect()->to('/admin/edit/' . $this->request->getVar('slug'))->withInput();
 		}
+
+		// cek gambar berubah atau tidak 
 
 		$fileGambar = $this->request->getFile('gambar');
 
 		if ($fileGambar->getError() == 4) {
 			$namaGambar = $this->request->getVar('gambarLama');
+		} elseif ($this->request->getVar('gambarLama') != 'default.png') {
+			unlink('asset/img/' . $this->request->getVar('gambarLama'));
+
+			$namaGambar = $fileGambar->getRandomName();
+
+			$fileGambar->move('asset/img/', $namaGambar);
 		} else {
 			$namaGambar = $fileGambar->getRandomName();
 
 			$fileGambar->move('asset/img/', $namaGambar);
-			unlink('asset/img/' . $this->request->getVar('gambarLama'));
 		}
+
 
 		$slug = url_title($this->request->getVar('nama'), '-', true);
 
-		$this->barangModel->save([
-			'idBarang' => $idBarang,
+		$this->barangModel->update($idBarang, [
 			'nama' => $this->request->getVar('nama'),
 			'slug' => $slug,
 			'deskripsi' => $this->request->getVar('deskripsi'),
 			'gambar' => $namaGambar
 		]);
 
-		session()->setFlashdata('pesan', 'Barang berhasil disimpan.');
-		return redirect()->to('/admin');
+		session()->setFlashdata('pesan', 'Produk berhasil diupdate');
+
+		return redirect()->to('/admin/view');
 	}
-
-
-
 
 	//--------------------------------------------------------------------
 
