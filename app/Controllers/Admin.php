@@ -115,6 +115,8 @@ class Admin extends BaseController
 
 		if ($barang['gambar'] != 'default.png') {
 			unlink('asset/img' . $barang['gambar']);
+		} else {
+			$this->barangModel->delete($idBarang);
 		}
 
 		$this->barangModel->delete($idBarang);
