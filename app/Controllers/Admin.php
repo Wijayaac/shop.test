@@ -15,15 +15,6 @@ class Admin extends BaseController
 	public function index()
 	{
 		$data = [
-			'title' => 'Dashboard'
-		];
-
-		return view('admin/index', $data);
-	}
-
-	public function view()
-	{
-		$data = [
 			'title' => 'List Produk',
 			'barang' => $this->barangModel->getBarang()
 		];
